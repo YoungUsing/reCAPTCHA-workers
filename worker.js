@@ -1,8 +1,19 @@
-/**
-const encsec = ""
-const recsec = ""
-const sitekey = ""
-*/
+// ==================== 配置变量 ====================
+// 加密密钥（用于生成最终验证码）
+const encsec = "encsec-ggij...";
+
+// reCAPTCHA 配置
+const g_sitekey = "6Le3...";   // 站点密钥
+const g_sec = "6Le3...";        // 密钥
+
+// Turnstile 配置（请替换为实际值）
+const cf_sitekey = "0x4AAAAAAAE-...";                             // 站点密钥
+const cf_sec = "0x4AAAAAAAE-...";                                 // 密钥
+
+// 验证方式选择：至少启用一个，若两者均禁用则直接通过（不推荐）
+const enable_recaptcha = true;   // 是否启用 reCAPTCHA
+const enable_turnstile = true;   // 是否启用 Turnstile
+// ==================================================
 
 addEventListener("fetch", event => {
   event.respondWith(handleRequest(event.request))
@@ -12,7 +23,16 @@ async function handleRequest(request) {
   const url = new URL(request.url);
   if (url.pathname == "/") {
     if (request.method == "GET") {
-      return new Response(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>安全验证 | reCAPTCHA</title><style>*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif}body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}.container{background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:450px;overflow:hidden}.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center}.header h1{font-size:28px;font-weight:600;margin-bottom:8px}.header p{opacity:0.9;font-size:16px}.form-container{padding:40px}.form-group{margin-bottom:30px}.form-group label{display:block;margin-bottom:10px;color:#333;font-weight:500;font-size:15px}.auth-input{width:100%;padding:16px 20px;border:2px solid #e0e0e0;border-radius:12px;font-size:16px;transition:all 0.3s ease;background:#f9f9f9}.auth-input:focus{outline:none;border-color:#667eea;background:white;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}.auth-input::placeholder{color:#999}.optional-tag{background:#eef2ff;color:#667eea;font-size:12px;padding:4px 10px;border-radius:10px;margin-left:10px;font-weight:500}.captcha-container{margin:30px 0;display:flex;justify-content:center}.submit-btn{width:100%;padding:18px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:12px;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.3s ease;margin-top:10px;opacity:0.6;pointer-events:none}.submit-btn.enabled{opacity:1;pointer-events:auto}.submit-btn.enabled:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(102,126,234,0.4)}.submit-btn.enabled:active{transform:translateY(0)}.status-message{text-align:center;margin-top:15px;font-size:14px;color:#666;height:20px}@media (max-width:480px){.form-container{padding:30px 25px}.header{padding:25px}}</style></head><body><div class="container"><div class="header"><h1>安全验证</h1><p>请完成验证以证明你是真人</p></div><div class="form-container"><form id="captchaForm" action="/" method="post"><div class="form-group"><label>授权码<span class="optional-tag">可选</span></label><input type="text" id="auth-code" name="authorization_code" placeholder="请输入授权码（如果需要）" class="auth-input"></div><div class="captcha-container"><div class="g-recaptcha" data-sitekey="`+sitekey+`" data-callback="onCaptchaSuccess" data-expired-callback="onCaptchaExpired"></div></div><div class="status-message" id="statusMessage"></div><button type="submit" class="submit-btn" id="submitBtn" disabled>提交验证</button></form></div></div><script src="https://www.recaptcha.net/recaptcha/api.js" async defer></script><script>let captchaVerified=false;function onCaptchaSuccess(response){captchaVerified=true;updateSubmitButton();document.getElementById('statusMessage').textContent='✓ 验证通过，现在可以提交了';document.getElementById('statusMessage').style.color='#10b981';}function onCaptchaExpired(){captchaVerified=false;updateSubmitButton();document.getElementById('statusMessage').textContent='验证已过期，请重新完成验证';document.getElementById('statusMessage').style.color='#ef4444';}function updateSubmitButton(){const submitBtn=document.getElementById('submitBtn');if(captchaVerified){submitBtn.classList.add('enabled');submitBtn.disabled=false;}else{submitBtn.classList.remove('enabled');submitBtn.disabled=true;}}document.addEventListener('DOMContentLoaded',function(){updateSubmitButton();document.getElementById('captchaForm').addEventListener('submit',function(e){if(!captchaVerified){e.preventDefault();document.getElementById('statusMessage').textContent='请先完成 reCAPTCHA 验证';document.getElementById('statusMessage').style.color='#ef4444';}});const authInput=document.getElementById('auth-code');authInput.addEventListener('focus',function(){this.parentElement.style.transform='scale(1.01)';});authInput.addEventListener('blur',function(){this.parentElement.style.transform='scale(1)';});});</script></body></html>`,
+      // 动态生成验证组件的 HTML
+      let captchaHtml = '';
+      if (enable_recaptcha) {
+        captchaHtml += '<div class="g-recaptcha" data-sitekey="' + g_sitekey + '" data-callback="onCaptchaSuccess" data-expired-callback="onCaptchaExpired"></div>';
+      }
+      if (enable_turnstile) {
+        captchaHtml += '<div class="cf-turnstile" data-sitekey="' + cf_sitekey + '" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired"></div>';
+      }
+
+      return new Response(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>安全验证 | 双验证</title><style>* {margin: 0;padding: 0;box-sizing: border-box;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif}body {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);min-height: 100vh;display: flex;justify-content: center;align-items: center;padding: 20px}.container {background: white;border-radius: 20px;box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);width: 100%;max-width: 450px;overflow: hidden}.header {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);color: white;padding: 30px;text-align: center}.header h1 {font-size: 28px;font-weight: 600;margin-bottom: 8px}.header p {opacity: 0.9;font-size: 16px}.form-container {padding: 40px}.form-group {margin-bottom: 30px}.form-group label {display: block;margin-bottom: 10px;color: #333;font-weight: 500;font-size: 15px}.auth-input {width: 100%;padding: 16px 20px;border: 2px solid #e0e0e0;border-radius: 12px;font-size: 16px;transition: all 0.3s ease;background: #f9f9f9}.auth-input:focus {outline: none;border-color: #667eea;background: white;box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1)}.auth-input::placeholder {color: #999}.optional-tag {background: #eef2ff;color: #667eea;font-size: 12px;padding: 4px 10px;border-radius: 10px;margin-left: 10px;font-weight: 500}.captcha-container {margin: 30px 0;display: flex;flex-direction: column;align-items: center;gap: 20px;}.submit-btn {width: 100%;padding: 18px;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);color: white;border: none;border-radius: 12px;font-size: 18px;font-weight: 600;cursor: pointer;transition: all 0.3s ease;margin-top: 10px;opacity: 0.6;pointer-events: none}.submit-btn.enabled {opacity: 1;pointer-events: auto}.submit-btn.enabled:hover {transform: translateY(-2px);box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4)}.submit-btn.enabled:active {transform: translateY(0)}.status-message {text-align: center;margin-top: 15px;font-size: 14px;color: #666;height: 20px}@media (max-width:480px) {.form-container {padding: 30px 25px}.header {padding: 25px}}</style></head><body><div class="container"><div class="header"><h1>安全验证</h1><p>请完成验证以证明你是真人</p></div><div class="form-container"><form id="captchaForm" action="/" method="post"><div class="form-group"><label>授权码<span class="optional-tag">可选</span></label><input type="text"id="auth-code" name="authorization_code" placeholder="请输入授权码（如果需要）" class="auth-input"></div><div class="captcha-container">${captchaHtml}</div><div class="status-message" id="statusMessage"></div><button type="submit" class="submit-btn"id="submitBtn" disabled>提交验证</button></form></div></div><script src="https://www.recaptcha.net/recaptcha/api.js" async defer></script><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><script>const ENABLE_RECAPTCHA = ${enable_recaptcha};const ENABLE_TURNSTILE = ${enable_turnstile};let recaptchaVerified = !ENABLE_RECAPTCHA;let turnstileVerified = !ENABLE_TURNSTILE;function onCaptchaSuccess(response) { if (ENABLE_RECAPTCHA) {recaptchaVerified = true; updateSubmitButton(); document.getElementById('statusMessage').textContent = '✓ reCAPTCHA 验证通过'; document.getElementById('statusMessage').style.color = '#10b981'; }}function onCaptchaExpired() { if (ENABLE_RECAPTCHA) {recaptchaVerified = false; updateSubmitButton(); document.getElementById('statusMessage').textContent = 'reCAPTCHA 验证已过期，请重新完成验证'; document.getElementById('statusMessage').style.color = '#ef4444'; }}function onTurnstileSuccess(response) {if (ENABLE_TURNSTILE) {turnstileVerified = true;updateSubmitButton();document.getElementById('statusMessage').textContent = '✓ Turnstile 验证通过';document.getElementById('statusMessage').style.color = '#10b981';}}function onTurnstileExpired() {if (ENABLE_TURNSTILE) {turnstileVerified = false;updateSubmitButton();document.getElementById('statusMessage').textContent = 'Turnstile 验证已过期，请重新完成验证';document.getElementById('statusMessage').style.color = '#ef4444';}}function updateSubmitButton() { const submitBtn = document.getElementById('submitBtn');if (recaptchaVerified && turnstileVerified) { submitBtn.classList.add('enabled'); submitBtn.disabled = false; } else { submitBtn.classList.remove('enabled'); submitBtn.disabled = true; } } document.addEventListener('DOMContentLoaded', function () { updateSubmitButton(); document.getElementById('captchaForm').addEventListener('submit', function (e) { if (!recaptchaVerified || !turnstileVerified) {e.preventDefault(); document.getElementById('statusMessage').textContent = '请先完成必要的验证'; document.getElementById('statusMessage').style.color = '#ef4444'; } }); const authInput = document.getElementById('auth-code'); authInput.addEventListener('focus', function () { this.parentElement.style.transform = 'scale(1.01)'; }); authInput.addEventListener('blur', function () { this.parentElement.style.transform = 'scale(1)'; }); }); </script></body></html>`,
         {
           status: 200,
           headers: {
@@ -25,17 +45,48 @@ async function handleRequest(request) {
         var clientbody = await request.text()
         var clientdata = new URLSearchParams(clientbody)
         var clientsecret = clientdata.get("g-recaptcha-response")
+        var turnstileResponse = clientdata.get("cf-turnstile-response")
+
         const beijingTimeStr = formatBeijingDateTime(new Date())
         var clientcode = clientdata.get("authorization_code")+beijingTimeStr
-        var verify = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-          method: "POST",
-          body: "secret="+recsec+"&response=" + clientsecret,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
+
+        // 验证 reCAPTCHA（如果启用）
+        let recaptchaSuccess = !enable_recaptcha; // 未启用则默认为成功
+        if (enable_recaptcha) {
+          if (!clientsecret) {
+            recaptchaSuccess = false;
+          } else {
+            var recaptchaVerify = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+              method: "POST",
+              body: "secret="+g_sec+"&response=" + clientsecret,
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+              }
+            })
+            var recaptchaJSON = await recaptchaVerify.json()
+            recaptchaSuccess = recaptchaJSON.success === true;
           }
-        })
-        var verifyJSON = await verify.json()
-        if (verifyJSON.success) {
+        }
+
+        // 验证 Turnstile（如果启用）
+        let turnstileSuccess = !enable_turnstile;
+        if (enable_turnstile) {
+          if (!turnstileResponse) {
+            turnstileSuccess = false;
+          } else {
+            var turnstileVerify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+              method: "POST",
+              body: "secret=" + cf_sec + "&response=" + turnstileResponse,
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+              }
+            });
+            var turnstileJSON = await turnstileVerify.json();
+            turnstileSuccess = turnstileJSON.success === true;
+          }
+        }
+
+        if (recaptchaSuccess && turnstileSuccess) {
           const verifycode = await encryptString(clientcode, encsec)
           return generateResultPage(true, verifycode)
         } else {
@@ -84,26 +135,21 @@ async function handleRequest(request) {
           }
         }
       }
-      // 其他请求方法
       return new Response('Method not allowed', { status: 405 });
     }
   }
   return new Response(null,{ status: 404 })
 }
 
-
-
-
-
 // 生成结果页面HTML
 function generateResultPage(success, code) {
-  const title = success ? '验证成功 | reCAPTCHA' : '验证失败 | reCAPTCHA';
+  const title = success ? '验证成功 | 双验证' : '验证失败 | 双验证';
   const headerClass = success ? 'success' : 'error';
   const headerTitle = success ? '验证成功' : '验证失败';
   const headerSubtitle = success ? '您的验证已通过' : '验证未通过';
   const icon = success ? '✓' : '✕';
   const iconStyle = success ? 'background:#d1fae5;color:#10b981;' : 'background:#fee2e2;color:#ef4444;';
-  const message = success ? '恭喜！您已成功完成验证。您的唯一验证码已生成，请妥善保存。' : '抱歉，验证未能通过。请检查您的reCAPTCHA验证或授权码，然后重试。';
+  const message = success ? '恭喜！您已成功完成验证。您的唯一验证码已生成，请妥善保存。' : '抱歉，验证未能通过。请检查您的验证或授权码，然后重试。';
   const codeDisplay = success ? `${code}` : '';
   const uhtml = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${title}</title><style>:root{--primary-gradient:linear-gradient(135deg,#667eea 0%,#764ba2 100%);--success-gradient:linear-gradient(135deg,#10b981 0%,#059669 100%);--error-gradient:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);--white:#fff;--gray-light:#f9f9f9;--gray-border:#e0e0e0;--gray-text:#666;--success:#10b981;--error:#ef4444;--shadow:0 20px 60px rgba(0,0,0,0.3);--code-bg:#f3f4f6;--code-text:#1f2937}body,html{margin:0;padding:0;width:100%;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif}.result-wrapper{background:var(--primary-gradient);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}.result-container{background:var(--white);border-radius:20px;box-shadow:var(--shadow);width:100%;max-width:400px;overflow:hidden}.result-header{padding:25px 30px;text-align:center;color:var(--white)}.result-header.success{background:var(--success-gradient)}.result-header.error{background:var(--error-gradient)}.result-header h1{font-size:24px;font-weight:600;margin:0 0 8px 0}.result-header p{opacity:0.9;font-size:14px;margin:0}.result-content{padding:30px;text-align:center}.result-icon{width:80px;height:80px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:36px;background:var(--gray-light)}.result-message{font-size:16px;color:var(--gray-text);margin-bottom:25px;line-height:1.5}.code-container{background:var(--code-bg);border-radius:12px;padding:20px;margin:20px 0;border:1px solid var(--gray-border)}.code-label{font-size:14px;color:var(--gray-text);margin-bottom:8px;text-align:left}.code-display-wrapper{display:flex;gap:10px;align-items:center}.code-display{flex:1;font-family:'Courier New',monospace;font-size:18px;font-weight:bold;color:var(--code-text);background:var(--white);padding:12px;border-radius:8px;border:2px dashed #d1d5db;word-break:break-all;text-align:center}.copy-btn{background:var(--primary-gradient);color:var(--white);border:none;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s ease;white-space:nowrap}.copy-btn:hover{opacity:0.9;transform:translateY(-1px)}.result-actions{margin-top:30px}.back-btn{display:inline-block;padding:12px 24px;background:var(--primary-gradient);color:var(--white);border-radius:10px;text-decoration:none;font-weight:600;font-size:16px;transition:all 0.2s ease}.back-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(102,126,234,0.3)}@media (max-width:480px){.result-content{padding:20px}.result-header{padding:20px}.code-display-wrapper{flex-direction:column}.copy-btn{width:100%}}</style></head><body><div class="result-wrapper"><div class="result-container"><div class="result-header ${headerClass}"><h1>${headerTitle}</h1><p>${headerSubtitle}</p></div><div class="result-content"><div class="result-icon" style="${iconStyle}">${icon}</div><div class="result-message">${message}</div>${success ? `<div class="code-container"><div class="code-label">验证代码：</div><div class="code-display-wrapper"><div class="code-display" id="codeText">${codeDisplay}</div><button class="copy-btn" onclick="copyCode()">复制代码</button></div></div>` : ''}<div class="result-actions"><a href="javascript:history.back()" class="back-btn">返回上一页</a></div></div></div></div><script>function copyCode(){const codeText=document.getElementById('codeText');navigator.clipboard.writeText(codeText.textContent).then(()=>{const originalText=codeText.nextElementSibling.textContent;codeText.nextElementSibling.textContent='复制成功';setTimeout(()=>{codeText.nextElementSibling.textContent=originalText;},1500);}).catch(err=>{console.error('复制失败:',err);});}</script></body></html>`
   return new Response(uhtml, {
@@ -113,9 +159,6 @@ function generateResultPage(success, code) {
     }
   })
 }
-
-
-
 
 // 密钥处理函数：将任意字符串转换为符合 AES-GCM 要求的密钥
 async function getKeyMaterial(encsec) {
