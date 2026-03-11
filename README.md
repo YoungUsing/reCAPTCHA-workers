@@ -1,12 +1,13 @@
-# 双验证服务 - Cloudflare Worker (reCAPTCHA + Turnstile)
+# 多验证服务 - Cloudflare Worker (reCAPTCHA + Turnstile + hCaptcha)
 
-本项目是一个基于 Cloudflare Workers 的验证服务，支持 **Google reCAPTCHA v2** 和 **Cloudflare Turnstile** 两种验证方式。用户可根据配置选择启用其中一种或同时启用两者。验证通过后，服务会生成一个 AES-GCM 加密的验证码，并提供在线解密工具以供验证。
+本项目是一个基于 Cloudflare Workers 的验证服务，支持 **Google reCAPTCHA v2**、**Cloudflare Turnstile** 和 **hCaptcha** 三种验证方式。用户可根据配置灵活选择启用其中一种或同时启用多种。验证通过后，服务会生成一个 AES-GCM 加密的验证码，并提供在线解密工具以供验证。
 
 ## 功能特点
 
 - ✅ 支持 Google reCAPTCHA v2（复选框）
 - ✅ 支持 Cloudflare Turnstile（标准模式）
-- 🔧 灵活的验证方式开关：可单独启用任一验证，或同时启用两者
+- ✅ 支持 hCaptcha（复选框）
+- 🔧 灵活的验证方式开关：可单独启用任一验证，或同时启用多个
 - 🔐 AES-GCM 256 位加密生成唯一验证码
 - 📱 响应式设计，移动端友好
 - 🔄 实时验证状态反馈
@@ -28,6 +29,11 @@
 - 创建新站点，添加你的域名（Worker 域名）
 - 获取 **站点密钥 (Site Key)** 和 **密钥 (Secret Key)**
 
+#### hCaptcha
+- 访问 [hCaptcha Dashboard](https://dashboard.hcaptcha.com/)（需注册账号）
+- 创建新站点，选择 **“I am the owner of this website”**，填写域名
+- 获取 **站点密钥 (Sitekey)** 和 **密钥 (Secret)**（格式如 `ES_xxxx`）
+
 ### 2. 自定义加密密钥 (encsec)
 - `encsec` 是用于 AES-GCM 加密的密钥，可以是任意字符串
 - 建议使用强密码（例如 32 位随机字符串）
@@ -40,20 +46,29 @@
 ```javascript
 // ==================== 配置变量 ====================
 const encsec = "你的加密密钥";                       // 加密密钥
+
+// reCAPTCHA 配置
 const g_sitekey = "你的 reCAPTCHA 站点密钥";          // reCAPTCHA 站点密钥
 const g_sec = "你的 reCAPTCHA 密钥";                  // reCAPTCHA 密钥
+
+// Turnstile 配置
 const cf_sitekey = "你的 Turnstile 站点密钥";         // Turnstile 站点密钥
 const cf_sec = "你的 Turnstile 密钥";                  // Turnstile 密钥
 
-// 验证方式选择
+// hCaptcha 配置
+const h_sitekey = "你的 hCaptcha 站点密钥";            // hCaptcha 站点密钥
+const h_sec = "你的 hCaptcha 密钥";                    // hCaptcha 密钥
+
+// 验证方式选择：至少启用一个，若全部禁用则直接通过（不推荐）
 const enable_recaptcha = true;   // 是否启用 reCAPTCHA
 const enable_turnstile = true;   // 是否启用 Turnstile
+const enable_hcaptcha = true;    // 是否启用 hCaptcha
 // ==================================================
 ```
 
 **注意**：  
-- 若只需一种验证，可将另一个开关设为 `false`。
-- 若两者均设为 `false`，验证将直接通过（何意味）。
+- 若只需某种验证，可将其他开关设为 `false`。
+- 若三者均设为 `false`，验证将直接通过（何意味）。
 
 #### 使用环境变量（推荐）
 为提高安全性，建议将密钥存储为 Cloudflare Workers 的**机密环境变量**。注释配置区的有关代码，然后在 Worker 设置的 **变量和机密** 处或通过 Wrangler 设置对应的变量。
@@ -65,6 +80,7 @@ const enable_turnstile = true;   // 是否启用 Turnstile
 2. 根据配置完成相应的验证：
    - reCAPTCHA：点击复选框完成挑战（若启用）。
    - Turnstile：自动或手动点击复选框（标准模式）。
+   - hCaptcha：点击复选框完成挑战（若启用）。
 3. 可选填写授权码（将附加北京时间后一起加密）。
 4. 提交表单，若所有启用的验证均通过，页面将显示加密后的验证码。
 5. 点击“复制代码”保存验证码，用于后续验证。
@@ -139,6 +155,7 @@ wrangler deploy
 wrangler secret put encsec
 wrangler secret put g_sec
 wrangler secret put cf_sec
+wrangler secret put h_sec
 # 普通变量可在 wrangler.toml 中设置
 ```
 
@@ -147,7 +164,7 @@ wrangler secret put cf_sec
 1. **定期更换加密密钥**：建议每 3-6 个月更换一次 `encsec`。
 2. **限制访问**：可在 Worker 前添加 IP 白名单或自定义访问控制。
 3. **监控用量**：通过 Cloudflare Analytics 监控验证请求量。
-4. **备份密钥**：将 `encsec` 和 reCAPTCHA/Turnstile 密钥安全备份。
+4. **备份密钥**：将 `encsec` 和 reCAPTCHA/Turnstile/hCaptcha 密钥安全备份。
 
 ### 查看日志
 ```bash
@@ -157,3 +174,12 @@ wrangler tail
 ## 许可证
 
 本项目基于 MIT 许可证开源。欢迎贡献和反馈。
+```
+
+**更新内容总结**：
+- 标题和功能特点中增加了 `hCaptcha`。
+- 在获取密钥部分添加了 hCaptcha 的获取步骤。
+- 配置变量区域加入了 `h_sitekey`、`h_sec` 和 `enable_hcaptcha`。
+- 验证流程中提及了 hCaptcha 的交互。
+- 安全建议中补充了 hCaptcha 密钥备份。
+- 其他部分根据代码实际变量名进行了相应调整。
